@@ -1,9 +1,7 @@
 import { betterAuth } from "better-auth";
 import { Pool } from "@neondatabase/serverless";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is missing.");
-}
+const connectionString = process.env.DATABASE_URL || "postgres://placeholder:placeholder@localhost:5432/placeholder";
 
 const socialProviders: Record<string, any> = {};
 
@@ -23,7 +21,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 export const auth = betterAuth({
   database: new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
   }),
   user: {
     modelName: "users",
