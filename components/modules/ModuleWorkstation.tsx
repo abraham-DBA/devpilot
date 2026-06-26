@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BlockerModal } from "./BlockerModal";
 import { updateModuleProgressAndStatus, updateModuleNotes } from "@/actions/modules";
+import { toast } from "sonner";
 import { 
   ChevronLeft, 
   Calendar, 
@@ -110,8 +111,6 @@ export function ModuleWorkstation({ project, module, profile }: Props) {
   const [blockerDesc, setBlockerDesc] = useState<string>(module.blocker_description || "");
   const [isBlockerOpen, setIsBlockerOpen] = useState(false);
   const [isSavingControls, setIsSavingControls] = useState(false);
-  const [controlsSuccess, setControlsSuccess] = useState(false);
-  const [controlsError, setControlsError] = useState<string | null>(null);
 
   // Documentation tabs state
   const [activeTab, setActiveTab] = useState<"technical" | "implementation">("technical");
@@ -119,8 +118,6 @@ export function ModuleWorkstation({ project, module, profile }: Props) {
   const [techNotes, setTechNotes] = useState(module.technical_notes || "");
   const [implNotes, setImplNotes] = useState(module.implementation_notes || "");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
-  const [notesSuccess, setNotesSuccess] = useState(false);
-  const [notesError, setNotesError] = useState<string | null>(null);
 
   const isAssigned = module.assigned_to === profile.id;
   const isManager = profile.role === "team_lead" || profile.role === "project_manager";
@@ -135,6 +132,8 @@ export function ModuleWorkstation({ project, module, profile }: Props) {
       setStatus(val);
       if (val === "completed") {
         setProgress(100);
+      } else if (val === "not_started") {
+        setProgress(0);
       }
     }
   };
@@ -155,8 +154,6 @@ export function ModuleWorkstation({ project, module, profile }: Props) {
   const handleSaveControls = async () => {
     if (!canEdit) return;
     setIsSavingControls(true);
-    setControlsError(null);
-    setControlsSuccess(false);
 
     try {
       const result = await updateModuleProgressAndStatus({
@@ -168,15 +165,14 @@ export function ModuleWorkstation({ project, module, profile }: Props) {
       });
 
       if (!result.success) {
-        setControlsError(result.error || "Failed to update workstation data.");
+        toast.error(result.error || "Failed to update workstation data.");
       } else {
-        setControlsSuccess(true);
-        setTimeout(() => setControlsSuccess(false), 3000);
+        toast.success("Module status updated successfully!");
         router.refresh();
       }
     } catch (err) {
       console.error(err);
-      setControlsError("An error occurred during submission.");
+      toast.error("An error occurred during submission.");
     } finally {
       setIsSavingControls(false);
     }
@@ -186,8 +182,6 @@ export function ModuleWorkstation({ project, module, profile }: Props) {
   const handleSaveNotes = async () => {
     if (!canEdit) return;
     setIsSavingNotes(true);
-    setNotesError(null);
-    setNotesSuccess(false);
 
     try {
       const result = await updateModuleNotes({
@@ -198,16 +192,15 @@ export function ModuleWorkstation({ project, module, profile }: Props) {
       });
 
       if (!result.success) {
-        setNotesError(result.error || "Failed to save scope documentation.");
+        toast.error(result.error || "Failed to save scope documentation.");
       } else {
-        setNotesSuccess(true);
+        toast.success(`${activeTab === "technical" ? "Technical" : "Implementation"} notes saved!`);
         setIsEditMode(false);
-        setTimeout(() => setNotesSuccess(false), 3000);
         router.refresh();
       }
     } catch (err) {
       console.error(err);
-      setNotesError("An error occurred while saving notes.");
+      toast.error("An error occurred while saving notes.");
     } finally {
       setIsSavingNotes(false);
     }
@@ -334,22 +327,7 @@ export function ModuleWorkstation({ project, module, profile }: Props) {
                   }}
                 />
                 
-                {notesError && (
-                  <div className="p-3 bg-error-light text-error-foreground rounded-lg flex items-center gap-2 text-xs">
-                    <AlertCircle className="h-4 w-4 shrink-0" />
-                    <span>{notesError}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between">
-                  {notesSuccess ? (
-                    <span className="text-xs font-bold text-success flex items-center gap-1">
-                      <Check className="h-4 w-4" />
-                      Notes saved successfully!
-                    </span>
-                  ) : (
-                    <div></div>
-                  )}
+                <div className="flex items-center justify-end">
                   <button
                     onClick={handleSaveNotes}
                     disabled={isSavingNotes}
@@ -452,23 +430,9 @@ export function ModuleWorkstation({ project, module, profile }: Props) {
                 />
               </div>
 
-              {/* Control Action errors */}
-              {controlsError && (
-                <div className="p-3 bg-error-light text-error-foreground rounded-lg flex items-center gap-2 text-xs">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{controlsError}</span>
-                </div>
-              )}
-
               {/* Save Controls Button */}
               {canEdit ? (
                 <div className="flex flex-col gap-2 mt-1">
-                  {controlsSuccess && (
-                    <span className="text-xs font-bold text-success flex items-center gap-1 justify-center">
-                      <CheckCircle2 className="h-4 w-4 shrink-0" />
-                      Status updated!
-                    </span>
-                  )}
                   <button
                     type="button"
                     onClick={handleSaveControls}

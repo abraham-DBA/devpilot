@@ -171,6 +171,8 @@ export async function updateModuleProgressAndStatus(formData: {
     let finalProgress = formData.progress;
     if (formData.status === "completed") {
       finalProgress = 100;
+    } else if (formData.status === "not_started") {
+      finalProgress = 0;
     } else if (finalProgress < 0) {
       finalProgress = 0;
     } else if (finalProgress > 100) {

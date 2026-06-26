@@ -60,6 +60,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - **Completions Locking**: Locked progress inputs to 100% when the status transitions to Completed, unlocking only when reverted.
 - **Custom CSS Conic Rings**: Created custom concentric CSS completion indicators using conic-gradients to avoid heavy bundle charting assets.
 - **In-Memory Aggregations**: Consolidated database workloads and active blocker queries by performing list filters and map reducers in-memory inside Next.js Page routers, optimizing Neon connection pools.
+- **Interactive Metrics Dashboard Layout**: Migrated the main project details page from a flat table overview into a premium split-grid layout featuring top overview KPI cards, dynamic countdown milestones, interactive blocker status log drawers, and real-time derived team velocity distributions.
 
 ---
 
@@ -68,3 +69,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Obsolete Supabase client files (`supabase-client.ts`, `supabase-server.ts`) and managed Neon Auth proxy handlers were deleted.
 - Better Auth database tables (`session`, `account`, `verification`) were successfully migrated using `npx auth migrate`.
 - Dropped `NOT NULL` constraint on `users.role` so signup does not fail before onboarding.
+- Created `actions/sync.ts` server action to support sync request workflows on critical blockers.
+- Stacked the bottom pilot card CTA buttons vertically instead of horizontally to align with user layout specifications.
+- Aligned landing page button colors and the bottom CTA card background with the brand Violet design system tokens set in globals.css.
+

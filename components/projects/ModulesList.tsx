@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, AlertCircle, HelpCircle, CheckCircle, Clock } from "lucide-react";
+import { Search, AlertCircle, HelpCircle, CheckCircle, Clock, ArrowRight } from "lucide-react";
 
 type Module = {
   id: string;
@@ -13,6 +13,7 @@ type Module = {
   progress: number;
   status: "not_started" | "in_progress" | "review" | "completed" | "blocked";
   deadline: string;
+  blocker_description?: string | null;
 };
 
 type Props = {
@@ -24,70 +25,111 @@ export function ModulesList({ projectId, modules }: Props) {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<string>("all");
 
-  const getStatusBadge = (status: Module["status"]) => {
-    switch (status) {
-      case "not_started":
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-secondary text-text-secondary border border-border">
-            Not Started
-          </span>
-        );
-      case "in_progress":
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-info-light text-info-foreground border border-info-light">
-            In Progress
-          </span>
-        );
-      case "review":
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-accent-muted text-accent border border-accent-light">
-            Review
-          </span>
-        );
-      case "completed":
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-success-lightest text-success-foreground border border-success-light">
-            Completed
-          </span>
-        );
-      case "blocked":
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-error-light text-error-foreground border border-error-light animate-pulse">
-            <span className="h-1.5 w-1.5 rounded-full bg-error"></span>
-            Blocked
-          </span>
-        );
+  const getModuleStatusInfo = (m: Module) => {
+    const now = Date.now();
+    const deadlineTime = new Date(m.deadline).getTime();
+    const diffTime = deadlineTime - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (m.status === "blocked") {
+      return {
+        label: "BLOCKED",
+        className: "bg-error-light text-error-foreground border border-error-light",
+        barColor: "bg-error",
+        textLabelColor: "text-error-foreground",
+      };
+    }
+    if (m.status === "completed") {
+      return {
+        label: "ON TRACK",
+        className: "bg-success-lightest text-success-foreground border border-success-light",
+        barColor: "bg-success",
+        textLabelColor: "text-success-foreground",
+      };
+    }
+    if (m.status === "review") {
+      return {
+        label: "ON TRACK",
+        className: "bg-success-lightest text-success-foreground border border-success-light",
+        barColor: "bg-accent",
+        textLabelColor: "text-success-foreground",
+      };
+    }
+
+    // Evaluate delay or risk based on deadline
+    if (diffTime < 0) {
+      return {
+        label: "AT RISK",
+        className: "bg-warning-light text-warning-foreground border border-warning-light",
+        barColor: "bg-warning",
+        textLabelColor: "text-warning-foreground",
+      };
+    } else if (diffDays <= 3) {
+      return {
+        label: "AT RISK",
+        className: "bg-warning-light text-warning-foreground border border-warning-light",
+        barColor: "bg-warning",
+        textLabelColor: "text-warning-foreground",
+      };
+    } else {
+      return {
+        label: "ON TRACK",
+        className: "bg-success-lightest text-success-foreground border border-success-light",
+        barColor: "bg-success",
+        textLabelColor: "text-success-foreground",
+      };
     }
   };
 
-  const getDeadlineBadge = (deadlineStr: string) => {
+  const getDeadlineText = (deadlineStr: string) => {
+    const date = new Date(deadlineStr);
+    const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+    const formattedDate = date.toLocaleDateString("en-US", options);
+
     const now = Date.now();
-    const deadlineTime = new Date(deadlineStr).getTime();
+    const deadlineTime = date.getTime();
     const diffTime = deadlineTime - now;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffTime < 0) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-error-light text-error-foreground border border-error-light">
-          <AlertCircle className="h-3 w-3" />
-          Overdue
-        </span>
-      );
-    } else if (diffDays <= 3) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-warning-light text-warning-foreground border border-warning-light">
-          <Clock className="h-3 w-3" />
-          Due Soon
-        </span>
-      );
+      return `${formattedDate} · Overdue`;
+    } else if (diffDays === 0) {
+      return `${formattedDate} · Due today`;
+    } else if (diffDays === 1) {
+      return `${formattedDate} · 1d left`;
     } else {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-success-lightest text-success-foreground border border-success-light">
-          <CheckCircle className="h-3 w-3" />
-          On Track
-        </span>
-      );
+      return `${formattedDate} · ${diffDays}d left`;
     }
+  };
+
+  // Helper to dynamically extract category/label from module name
+  const parseModuleMetadata = (name: string) => {
+    const parenMatch = name.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+    if (parenMatch) {
+      return {
+        title: parenMatch[1].trim(),
+        category: parenMatch[2].trim(),
+      };
+    }
+
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes("auth") || lowerName.includes("login") || lowerName.includes("identity")) {
+      return { title: name, category: "Core API" };
+    }
+    if (lowerName.includes("stripe") || lowerName.includes("billing") || lowerName.includes("finance") || lowerName.includes("payment")) {
+      return { title: name, category: "Finance" };
+    }
+    if (lowerName.includes("visualization") || lowerName.includes("frontend") || lowerName.includes("chart") || lowerName.includes("graph") || lowerName.includes("view")) {
+      return { title: name, category: "Frontend" };
+    }
+    if (lowerName.includes("notification") || lowerName.includes("pipeline") || lowerName.includes("infra") || lowerName.includes("email") || lowerName.includes("queue")) {
+      return { title: name, category: "Infra" };
+    }
+    if (lowerName.includes("migration") || lowerName.includes("database") || lowerName.includes("db") || lowerName.includes("schema") || lowerName.includes("sql")) {
+      return { title: name, category: "Data" };
+    }
+
+    return { title: name, category: "General" };
   };
 
   // Filter logic
@@ -107,9 +149,9 @@ export function ModulesList({ projectId, modules }: Props) {
   ];
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       {/* Filtering Header controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4">
         {/* Navigation Tabs */}
         <div className="flex flex-wrap items-center gap-2">
           {tabs.map((tab) => {
@@ -118,9 +160,9 @@ export function ModulesList({ projectId, modules }: Props) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   isActive
-                    ? "bg-accent text-accent-foreground shadow-sm"
+                    ? "bg-text-primary text-white shadow-sm"
                     : "bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-surface-secondary"
                 }`}
               >
@@ -143,104 +185,124 @@ export function ModulesList({ projectId, modules }: Props) {
         </div>
       </div>
 
-      {/* Modules Listing Grid / Table */}
+      {/* Modules Listing Grid (Premium Cards) */}
       {filteredModules.length > 0 ? (
-        <div className="overflow-x-auto border border-border rounded-xl bg-surface shadow-sm">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-border bg-surface-muted">
-                <th className="px-5 py-3 text-xs font-bold text-text-secondary uppercase tracking-wider">
-                  Module Name
-                </th>
-                <th className="px-5 py-3 text-xs font-bold text-text-secondary uppercase tracking-wider">
-                  Assigned Owner
-                </th>
-                <th className="px-5 py-3 text-xs font-bold text-text-secondary uppercase tracking-wider">
-                  Average Progress
-                </th>
-                <th className="px-5 py-3 text-xs font-bold text-text-secondary uppercase tracking-wider">
-                  Deadline Status
-                </th>
-                <th className="px-5 py-3 text-xs font-bold text-text-secondary uppercase tracking-wider">
-                  State
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filteredModules.map((m) => (
-                <tr
-                  key={m.id}
-                  className="hover:bg-surface-secondary transition-colors group"
-                >
-                  {/* Name Link */}
-                  <td className="px-5 py-3.5">
+        <div className="grid grid-cols-1 gap-5">
+          {filteredModules.map((m) => {
+            const { title, category } = parseModuleMetadata(m.name);
+            const statusInfo = getModuleStatusInfo(m);
+            const isBlocked = m.status === "blocked";
+            const hasBlockerMsg = m.blocker_description && m.blocker_description.trim().length > 0;
+
+            return (
+              <div
+                key={m.id}
+                className={`bg-surface border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col gap-4 relative group ${
+                  isBlocked ? "border-error ring-1 ring-error/20" : "border-border"
+                }`}
+              >
+                {/* Top: Name, Category, Status Badge */}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Link
                       href={`/projects/${projectId}/modules/${m.id}`}
-                      className="text-sm font-semibold text-text-primary group-hover:text-accent transition-colors"
+                      className="text-base font-bold text-text-primary hover:text-accent transition-colors flex items-center gap-1.5"
                     >
-                      {m.name}
+                      {title}
                     </Link>
-                    {m.description && (
-                      <p className="text-xs text-text-muted mt-0.5 line-clamp-1">
-                        {m.description}
-                      </p>
+                    {category && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-surface-secondary text-text-secondary border border-border">
+                        {category}
+                      </span>
                     )}
-                  </td>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusInfo.className}`}>
+                    {statusInfo.label}
+                  </span>
+                </div>
 
-                  {/* Owner */}
-                  <td className="px-5 py-3.5 text-sm text-text-secondary">
+                {/* Description */}
+                {m.description && (
+                  <p className="text-xs text-text-secondary leading-relaxed -mt-1 max-w-3xl">
+                    {m.description}
+                  </p>
+                )}
+
+                {/* Grid Metadata */}
+                <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 pt-2 text-xs border-t border-border/50">
+                  {/* Ownership */}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider">
+                      Ownership
+                    </span>
                     {m.assigned_name ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 mt-0.5">
                         <div className="h-6 w-6 rounded-full bg-accent-muted text-accent font-bold text-[10px] flex items-center justify-center border border-accent-light uppercase">
                           {m.assigned_name.slice(0, 2)}
                         </div>
-                        <span className="font-medium text-text-primary">
+                        <span className="font-semibold text-text-primary">
                           {m.assigned_name}
                         </span>
                       </div>
                     ) : (
-                      <span className="text-text-muted italic">Unassigned</span>
+                      <span className="text-text-muted italic mt-0.5">Unassigned</span>
                     )}
-                  </td>
+                  </div>
 
-                  {/* Progress bar */}
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-3 min-w-[120px]">
-                      <div className="w-full bg-border h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-300 ${
-                            m.status === "completed"
-                              ? "bg-success"
-                              : m.status === "blocked"
-                              ? "bg-error"
-                              : "bg-accent"
-                          }`}
-                          style={{ width: `${m.progress}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-xs font-bold text-text-primary text-right w-8">
-                        {m.progress}%
+                  {/* Deadline */}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider">
+                      Deadline
+                    </span>
+                    <span className="font-semibold text-text-primary mt-1">
+                      {getDeadlineText(m.deadline)}
+                    </span>
+                  </div>
+
+                  {/* Progress */}
+                  <div className="flex flex-col gap-1 w-full">
+                    <div className="flex items-center justify-between font-semibold text-text-primary">
+                      <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider">
+                        Progress
                       </span>
+                      <span>{m.progress}%</span>
                     </div>
-                  </td>
+                    <div className="w-full bg-border h-1.5 rounded-full overflow-hidden mt-1.5">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${statusInfo.barColor}`}
+                        style={{ width: `${m.progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
 
-                  {/* Deadline status */}
-                  <td className="px-5 py-3.5">
-                    {getDeadlineBadge(m.deadline)}
-                  </td>
+                {/* Warning Blocker Message Banner */}
+                {hasBlockerMsg && (
+                  <div
+                    className={`mt-2 rounded-xl px-4 py-2.5 text-xs font-semibold border ${
+                      isBlocked
+                        ? "bg-error-light text-error-foreground border-error-light"
+                        : "bg-warning-light text-warning-foreground border-warning-light"
+                    }`}
+                  >
+                    Blocked by: {m.blocker_description}
+                  </div>
+                )}
 
-                  {/* State badge */}
-                  <td className="px-5 py-3.5">
-                    {getStatusBadge(m.status)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                {/* Absolute Link Arrow */}
+                <Link
+                  href={`/projects/${projectId}/modules/${m.id}`}
+                  className="absolute right-4 bottom-4 text-text-muted group-hover:text-accent transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            );
+          })}
         </div>
       ) : (
         /* Empty State */
-        <div className="border border-border border-dashed rounded-xl p-10 flex flex-col items-center justify-center text-center bg-surface gap-4">
+        <div className="border border-border border-dashed rounded-2xl p-12 flex flex-col items-center justify-center text-center bg-surface gap-4">
           <div className="h-12 w-12 rounded-full bg-surface-secondary text-text-muted flex items-center justify-center border border-border">
             <HelpCircle className="h-6 w-6" />
           </div>

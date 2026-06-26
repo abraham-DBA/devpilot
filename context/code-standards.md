@@ -224,3 +224,4 @@ Only use the following packages. Do not install any additional third party node 
 - `lucide-react` — UI icons
 - `tailwindcss` — CSS framework
 - `zod` — Validation schema structures
+- `sonner` — Toast notification popups

@@ -207,3 +207,51 @@ import { Plus, CheckCircle, AlertTriangle, Play, HelpCircle } from "lucide-react
 ```
 
 Ensure standard sizing handles (`size={18}`) or class sizes (`className="h-5 w-5"`) are set on all SVG instances to avoid layout layout breakages.
+
+---
+
+## Sonner (Toast Notifications)
+
+Sonner provides lightweight, animated toast popups. The `<Toaster />` provider is mounted once in the root layout (`app/layout.tsx`).
+
+### Configuration
+
+```tsx
+// app/layout.tsx
+import { Toaster } from "sonner";
+
+// Inside <body>:
+<Toaster
+  position="top-right"
+  richColors
+  toastOptions={{
+    style: {
+      fontFamily: "var(--font-sans)",
+    },
+  }}
+/>
+```
+
+### Usage in Client Components
+
+Import `toast` from `sonner` and call it directly — no state management needed:
+
+```tsx
+import { toast } from "sonner";
+
+// Success
+toast.success("Module status updated successfully!");
+
+// Error
+toast.error("Failed to update workstation data.");
+
+// Info
+toast.info("Sync request queued.");
+```
+
+### Rules
+
+- **Never use inline success/error banners** for transient feedback. Use `toast.success()` and `toast.error()` instead.
+- Inline error states (e.g. form validation) that need to persist until the user corrects input may still use local state.
+- Do not install or use any other toast/notification library.
+

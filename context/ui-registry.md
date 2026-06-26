@@ -54,10 +54,10 @@ After building any component — update this file with the component name, file 
   * Tabs wrap: `flex flex-wrap items-center gap-2`
   * Search wrap: `relative w-full md:w-72 flex items-center`
   * Search input: `w-full bg-surface border border-border rounded-lg pl-9 pr-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all`
-  * Table Container: `overflow-x-auto border border-border rounded-xl bg-surface shadow-sm`
-  * Table Headers: `border-b border-border bg-surface-muted text-xs font-bold text-text-secondary uppercase tracking-wider`
-  * Table Rows: `hover:bg-surface-secondary transition-colors group`
-  * Progress Track: `w-full bg-border h-1.5 rounded-full overflow-hidden`
+  * Grid container: `grid grid-cols-1 gap-5`
+  * Card container: `bg-surface border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col gap-4 relative group`
+  * Category badge: `inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-surface-secondary text-text-secondary border border-border`
+  * Blocker warning: `mt-2 rounded-xl px-4 py-2.5 text-xs font-semibold border bg-error-light text-error-foreground border-error-light`
 
 ### 5. ModuleWorkstation
 * **Path**: [ModuleWorkstation.tsx](file:///Users/abrah/lupora-tech/devpilot/components/modules/ModuleWorkstation.tsx)
@@ -94,4 +94,12 @@ After building any component — update this file with the component name, file 
   * Inner Ring Overlay: `absolute h-[116px] w-[116px] bg-surface rounded-full flex flex-col items-center justify-center shadow-sm`
   * Workload distribution scroll wrap: `flex flex-col gap-4 py-1 max-h-[170px] overflow-y-auto pr-1`
   * Blocker Card: `bg-error-light border border-error-light rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-sm transition-shadow border-l-4 border-l-error`
+
+### 9. ProgressUpdateModal
+* **Path**: [ProgressUpdateModal.tsx](file:///Users/abrah/lupora-tech/devpilot/components/projects/ProgressUpdateModal.tsx)
+* **Classes / Tokens**:
+  * Backdrop: `absolute inset-0 bg-overlay/50 backdrop-blur-sm animate-fade-in`
+  * Modal Card: `relative bg-surface border border-border rounded-2xl p-6 shadow-2xl max-w-md w-full flex flex-col gap-4 z-10 mx-4`
+  * Slider input: `w-full h-1.5 bg-border rounded-lg appearance-none cursor-pointer accent-accent`
+
 
